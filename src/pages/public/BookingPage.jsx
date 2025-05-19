@@ -29,7 +29,7 @@ const BookingPage = () => {
         setFeaturedVenues(venues.map(venue => ({
           id: venue.id,
           name: venue.name,
-          image: venue.image ? `http://localhost:5000/${venue.image.replace(/\\/g, '/')}` : 'https://images.pexels.com/photos/169193/pexels-photo-169193.jpeg',
+          image: venue.image ? `http://noded.harshchaudhary.com.np/${venue.image.replace(/\\/g, '/')}` : 'https://images.pexels.com/photos/169193/pexels-photo-169193.jpeg',
           capacity: venue.capacity,
           location: venue.location,
           description: venue.description || 'A beautiful venue for your event.',

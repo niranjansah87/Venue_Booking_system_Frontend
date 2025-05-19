@@ -130,7 +130,7 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
   const onSignup = async (data) => {
     try {
       console.log('OtpVerification: Submitting signup:', data);
-      const signupResponse = await fetch('http://localhost:5000/api/signup', {
+      const signupResponse = await fetch('http://noded.harshchaudhary.com.np/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
