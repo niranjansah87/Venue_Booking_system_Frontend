@@ -13,7 +13,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': {
+      '/': {
         target: 'https://noded.harshchaudhary.com.np',
         changeOrigin: true,
         secure: true, // Because it's HTTPS
