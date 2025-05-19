@@ -11,4 +11,13 @@ export default defineConfig({
     },
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://noded.harshchaudhary.com.np',
+        changeOrigin: true,
+        secure: true, // Because it's HTTPS
+      },
+    },
+  },
 });
