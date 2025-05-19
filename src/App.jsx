@@ -14,7 +14,7 @@ import HomePage from './pages/public/HomePage';
 import BookingPage from './pages/public/BookingPage';
 import UserBookingPage from './pages/public/UserBookingPage';
 import AboutPage from './pages/public/AboutPage';
-import ContactPage from './pages/public/ContactPage';
+
 import LoginPage from './pages/public/LoginPage';
 import RegisterPage from './pages/public/RegisterPage';
 import ProfilePage from './pages/public/ProfilePage';
@@ -28,7 +28,7 @@ import ShiftsManagement from './pages/admin/ShiftsManagement';
 import PackagesManagement from './pages/admin/PackagesManagement';
 import MenusManagement from './pages/admin/MenusManagement';
 import UsersManagement from './pages/admin/UsersManagement';
-import AdminProfilePage from './pages/Admin/AdminProfilePage';
+import AdminProfilePage from './pages/admin/AdminProfilePage';
 import AdminSettings from './pages/Admin/Settings';
 import ForgotPasswordPage from './pages/public/ForgotPasswordPage';
 import AdminForgotPassword from './pages/admin/AdminForgotPassword';
