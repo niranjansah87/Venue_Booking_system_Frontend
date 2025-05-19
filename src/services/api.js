@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base URL
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL || 'http://noded.harshchaudhary.com.np/',
+  baseURL: import.meta.env.VITE_BACKEND_URL || 'https://noded.harshchaudhary.com.np/',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

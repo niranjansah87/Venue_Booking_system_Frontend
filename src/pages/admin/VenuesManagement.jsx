@@ -15,7 +15,7 @@ const VenuesManagement = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  const IMAGE_BASE_URL = 'http://noded.harshchaudhary.com.np/';
+  const IMAGE_BASE_URL = 'https://noded.harshchaudhary.com.np/';
   const DEFAULT_IMAGE = '/default_venue.jpg';
 
   const mockVenues = [
