@@ -29,7 +29,7 @@ import PackagesManagement from './pages/admin/PackagesManagement';
 import MenusManagement from './pages/admin/MenusManagement';
 import UsersManagement from './pages/admin/UsersManagement';
 import AdminProfilePage from './pages/admin/AdminProfilePage';
-import AdminSettings from './pages/Admin/Settings';
+import AdminSettings from './pages/admin/Settings';
 import ForgotPasswordPage from './pages/public/ForgotPasswordPage';
 import AdminForgotPassword from './pages/admin/AdminForgotPassword';
 // Error Boundary Component
