@@ -295,7 +295,7 @@ const BookingWizard = () => {
           extra_charges: Number(bookingData.extraCharges || 0),
           total_fare: Number(bookingData.totalFare),
         };
-        console.log('Booking payload:', JSON.stringify(payload, null, 2));
+        // console.log('Booking payload:', JSON.stringify(payload, null, 2));
         const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
         const token = storedUser.token;
         const response = await api.post('/api/admin/bookings/store', payload, {

@@ -61,7 +61,7 @@ const OtpVerification = ({ email, phone, verifyOtp, submitting, updateBookingDat
   // Reset localEmail when user is null
   useEffect(() => {
     if (!user && localEmail) {
-      console.log('OtpVerification: Resetting localEmail as user is null');
+      // console.log('OtpVerification: Resetting localEmail as user is null');
       setLocalEmail('');
     }
   }, [user, localEmail]);
@@ -80,7 +80,7 @@ const OtpVerification = ({ email, phone, verifyOtp, submitting, updateBookingDat
   const sendOtpToEmail = useCallback(
     debounceSendOtp(async (targetEmail, targetPhone) => {
       if (!targetEmail || !targetPhone) {
-        console.log('Skipping OTP send: Missing email or phone', { targetEmail, targetPhone });
+        // console.log('Skipping OTP send: Missing email or phone', { targetEmail, targetPhone });
         showToast('Email and phone number are required.', { type: 'error' });
         return;
       }
@@ -96,13 +96,17 @@ const OtpVerification = ({ email, phone, verifyOtp, submitting, updateBookingDat
       }
       try {
         setSendingOtp(true);
-        console.log('Sending OTP to:', { email: targetEmail, phone: targetPhone });
+        // console.log('Sending OTP to:', { email: targetEmail, phone: targetPhone });
         const response = await sendOtp(targetEmail, targetPhone);
-        console.log('OTP send response:', response);
+        // console.log('OTP send response:', response);
         hasSentOtp.current = true;
         setIsOtpSent(true);
         if (!hasShownToast.current) {
-          console.log('Triggering toast for OTP sent');
+          /* The above code is a comment block in JavaScript React. It is using multi-line comment
+          syntax to provide information or context about the code that follows. The comment is
+          indicating that a toast is being triggered for when an OTP (One-Time Password) is sent.
+          The actual code that triggers the toast is not shown in the comment block. */
+          // console.log('Triggering toast for OTP sent');
           showToast('OTP sent to your email and phone.', {
             toastId: 'otp-sent',
             autoClose: 5000,
@@ -124,7 +128,7 @@ const OtpVerification = ({ email, phone, verifyOtp, submitting, updateBookingDat
   // Send OTP on mount for logged-in users or after signup
   useEffect(() => {
   mountCount.current += 1;
-  console.log(`OtpVerification mounted ${mountCount.current} times, email: ${email || localEmail || user?.email}, phone: ${phone || user?.phone}`);
+  // console.log(`OtpVerification mounted ${mountCount.current} times, email: ${email || localEmail || user?.email}, phone: ${phone || user?.phone}`);
 
   if ((user || localEmail) && !isOtpSent && !hasSentOtp.current && !sendingOtp) {
     const targetEmail = localEmail || user?.email || email;
@@ -133,13 +137,13 @@ const OtpVerification = ({ email, phone, verifyOtp, submitting, updateBookingDat
   }
 
   return () => {
-    console.log('OtpVerification unmounting');
+    console.log();
   };
 }, [sendOtpToEmail, user, localEmail, email, phone]);
   // Handle signup form submission and auto-login
   const onSignup = async (data) => {
   try {
-    console.log('OtpVerification: Submitting signup:', data);
+    // console.log('OtpVerification: Submitting signup:', data);
     const signupResponse = await fetch('https://noded.harshchaudhary.com.np/api/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -165,7 +169,7 @@ const OtpVerification = ({ email, phone, verifyOtp, submitting, updateBookingDat
       throw new Error(errorData.message || 'Signup failed');
     }
 
-    console.log('OtpVerification: Signup successful');
+    // console.log('OtpVerification: Signup successful');
     await loginUser(data.email, data.password, false);
     updateBookingData('name', data.name);
     updateBookingData('phone', data.phone);
