@@ -2,23 +2,16 @@ import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import AdminHeader from '../components/layout/AdminHeader';
+import { useAuth } from '../contexts/AuthContext';
 
 const AdminLayout = () => {
   const location = useLocation();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Mock user data (replace with your auth system)
-  const user = {
-    name: 'Admin User',
-    email: 'admin@elegancevenues.com',
-    // avatar: 'https://example.com/avatar.jpg', // Uncomment if available
-  };
+  const { admin, logoutAdmin } = useAuth();
 
   const handleLogout = () => {
-    // Implement logout logic (e.g., clear token, redirect to /logout)
-    console.log('Logged out');
-    window.location.href = '/logout';
+    logoutAdmin(); // Call logoutAdmin from AuthContext
   };
 
   const toggleSidebar = () => {
@@ -31,7 +24,7 @@ const AdminLayout = () => {
         toggleSidebar={toggleSidebar}
         userMenuOpen={userMenuOpen}
         setUserMenuOpen={setUserMenuOpen}
-        user={user}
+        user={admin} // Use admin from AuthContext
         handleLogout={handleLogout}
         sidebarOpen={sidebarOpen}
       />

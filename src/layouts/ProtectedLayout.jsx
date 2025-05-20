@@ -1,18 +1,24 @@
 import React from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
 
-const ProtectedHeader = () => (
-  <header className="bg-teal-600 text-white py-4">
-    <div className="container mx-auto px-4 flex justify-between items-center">
-      <h1 className="text-2xl font-bold">User Dashboard</h1>
-      <nav>
-        <Link to="/profile" className="px-4 hover:underline">Profile</Link>
-        <Link to="/logout" className="px-4 hover:underline">Logout</Link>
-      </nav>
-    </div>
-  </header>
-);
+const ProtectedHeader = () => {
+  const { logoutUser } = useAuth();
+  return (
+    <header className="bg-teal-600 text-white py-4">
+      <div className="container mx-auto px-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">User Dashboard</h1>
+        <nav>
+          <Link to="/profile" className="px-4 hover:underline">Profile</Link>
+          <Link to="/login" onClick={logoutUser} className="px-4 hover:underline">
+            Logout
+          </Link>
+        </nav>
+      </div>
+    </header>
+  );
+};
 
 const ProtectedLayout = () => {
   const location = useLocation();

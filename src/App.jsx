@@ -1,8 +1,9 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext'; // Import AuthProvider
+import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PublicRoute from './components/common/PublicRoute';
+import AdminPublicRoute from './components/common/AdminPublicRoute'; // Import new component
 
 // Layouts
 import PublicLayout from './layouts/PublicLayout';
@@ -14,7 +15,6 @@ import HomePage from './pages/public/HomePage';
 import BookingPage from './pages/public/BookingPage';
 import UserBookingPage from './pages/public/UserBookingPage';
 import AboutPage from './pages/public/AboutPage';
-
 import LoginPage from './pages/public/LoginPage';
 import RegisterPage from './pages/public/RegisterPage';
 import ProfilePage from './pages/public/ProfilePage';
@@ -32,6 +32,7 @@ import AdminProfilePage from './pages/admin/AdminProfilePage';
 import AdminSettings from './pages/admin/Settings';
 import ForgotPasswordPage from './pages/public/ForgotPasswordPage';
 import AdminForgotPassword from './pages/admin/AdminForgotPassword';
+
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
   state = { error: null };
@@ -63,16 +64,15 @@ class ErrorBoundary extends React.Component {
 
 function App() {
   return (
-    <AuthProvider> {/* Wrap the app in AuthProvider */}
+    <AuthProvider>
       <ErrorBoundary>
         <Routes>
-          {/* ---------------- Public Routes ---------------- */}
+          {/* Public Routes (User) */}
           <Route element={<PublicLayout />}>
             <Route index element={<HomePage />} />
             <Route path="booking" element={<BookingPage />} />
             <Route path="/user/booking" element={<UserBookingPage />} />
             <Route path="about" element={<AboutPage />} />
-            {/* <Route path="contact" element={<ContactPage />} /> */}
             <Route
               path="login"
               element={
@@ -81,7 +81,6 @@ function App() {
                 </PublicRoute>
               }
             />
-            
             <Route
               path="forgot-password"
               element={
@@ -100,7 +99,7 @@ function App() {
             />
           </Route>
 
-          {/* ---------------- Protected User Routes ---------------- */}
+          {/* Protected User Routes */}
           <Route element={<ProtectedLayout />}>
             <Route
               path="/profile"
@@ -112,11 +111,25 @@ function App() {
             />
           </Route>
 
-          {/* ---------------- Admin Login Route (Unprotected) ---------------- */}
-          <Route path="/aonecafe/admin/login" element={<AdminLogin />} />
-          <Route path="/aonecafe/admin/forgot-password" element={<AdminForgotPassword/>} />
+          {/* Admin Public Routes */}
+          <Route
+            path="/aonecafe/admin/login"
+            element={
+              <AdminPublicRoute>
+                <AdminLogin />
+              </AdminPublicRoute>
+            }
+          />
+          <Route
+            path="/aonecafe/admin/forgot-password"
+            element={
+              <AdminPublicRoute>
+                <AdminForgotPassword />
+              </AdminPublicRoute>
+            }
+          />
 
-          {/* ---------------- Admin Routes (Protected) ---------------- */}
+          {/* Admin Routes (Protected) */}
           <Route
             path="/aonecafe/admin"
             element={
@@ -137,7 +150,7 @@ function App() {
             <Route path="/aonecafe/admin/settings" element={<AdminSettings />} />
           </Route>
 
-          {/* ---------------- Catch-all Route ---------------- */}
+          {/* Catch-all Route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ErrorBoundary>

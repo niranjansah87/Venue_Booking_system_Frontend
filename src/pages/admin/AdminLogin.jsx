@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import api from '../../services/api';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { toast } from 'react-toastify';
 
 function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const { loginAdmin } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,18 +16,11 @@ function AdminLogin() {
     setError('');
 
     try {
-      const response = await api.post('/api/admin/login', { email, password }, {
-        withCredentials: true,
-      });
-
-      const { admin } = response.data;
-      localStorage.setItem('user', JSON.stringify(admin));
-
-      // console.log('Navigating to /aonecafe/admin/dashboard');
-      navigate('/aonecafe/admin/dashboard'); 
+      await loginAdmin(email.trim().toLowerCase(), password.trim());
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      console.error('Admin login error:', err);
+      setError(err.message || 'Login failed. Please try again.');
+      toast.error(err.message || 'Login failed');
     } finally {
       setLoading(false);
     }

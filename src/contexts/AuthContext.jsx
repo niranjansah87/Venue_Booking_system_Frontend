@@ -1,4 +1,3 @@
-// AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -7,12 +6,14 @@ import { toast } from 'react-toastify';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null); // For regular users
+  const [admin, setAdmin] = useState(null); // For admins
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkUser = () => {
+    const checkAuth = () => {
+      // Check user authentication
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         try {
@@ -29,15 +30,33 @@ export const AuthProvider = ({ children }) => {
           localStorage.removeItem('user');
           setUser(null);
         }
-      } else {
-        setUser(null);
       }
+
+      // Check admin authentication
+      const storedAdmin = localStorage.getItem('admin');
+      if (storedAdmin) {
+        try {
+          const adminData = JSON.parse(storedAdmin);
+          if (!adminData.id || !adminData.email || !adminData.name) {
+            console.error('Invalid admin data in localStorage:', adminData);
+            localStorage.removeItem('admin');
+            setAdmin(null);
+          } else {
+            setAdmin(adminData);
+          }
+        } catch (error) {
+          console.error('Error parsing admin data:', error);
+          localStorage.removeItem('admin');
+          setAdmin(null);
+        }
+      }
+
       setLoading(false);
     };
-    checkUser();
+    checkAuth();
   }, []);
 
-  const login = async (email, password, redirect = true) => {
+  const loginUser = async (email, password, redirect = true) => {
     try {
       const response = await api.post('/api/login', { email, password });
       const { user } = response.data;
@@ -55,7 +74,7 @@ export const AuthProvider = ({ children }) => {
       }
       return user;
     } catch (error) {
-      console.error('Error logging in:', error);
+      console.error('Error logging in user:', error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -65,11 +84,58 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const loginAdmin = async (email, password, redirect = true) => {
+    try {
+      const response = await api.post('/api/admin/login', { email, password }, {
+        withCredentials: true,
+      });
+      const { admin } = response.data;
+      if (!admin || typeof admin !== 'object') {
+        throw new Error('No admin data received from server');
+      }
+      if (!admin.id || !admin.email || !admin.name) {
+        throw new Error('Admin data missing required fields (id, email, name)');
+      }
+      localStorage.setItem('admin', JSON.stringify(admin));
+      setAdmin(admin);
+      toast.success('Admin logged in successfully!');
+      if (redirect) {
+        navigate('/aonecafe/admin/dashboard');
+      }
+      return admin;
+    } catch (error) {
+      console.error('Error logging in admin:', error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        'Admin login failed. Please check your credentials.';
+      toast.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  const logoutUser = () => {
     localStorage.removeItem('user');
     setUser(null);
-    navigate('/login');
+    navigate('/login', { replace: true });
     toast.success('Logged out successfully!');
+  };
+
+  const logoutAdmin = async () => {
+    try {
+      const response = await api.post('/api/admin/logout', {}, { withCredentials: true });
+      if (response.status === 200) {
+        localStorage.removeItem('admin');
+        setAdmin(null);
+        navigate('/aonecafe/admin/login', { replace: true });
+        toast.success('Admin logged out successfully!');
+      } else {
+        throw new Error('Logout failed: Unexpected response status');
+      }
+    } catch (error) {
+      console.error('Error during admin logout:', error);
+      toast.error(error.response?.data?.error || 'Failed to log out. Please try again.');
+    }
   };
 
   const sendOtp = async (email, phone) => {
@@ -124,7 +190,18 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, login, logout, sendOtp, verifyOtp, sendConfirmation, loading }}
+      value={{
+        user,
+        admin,
+        loginUser,
+        loginAdmin,
+        logoutUser,
+        logoutAdmin,
+        sendOtp,
+        verifyOtp,
+        sendConfirmation,
+        loading,
+      }}
     >
       {children}
     </AuthContext.Provider>

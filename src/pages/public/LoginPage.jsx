@@ -8,22 +8,15 @@ function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { loginUser } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Trim inputs and convert email to lowercase
-    const trimmedEmail = email.trim().toLowerCase();
-    const trimmedPassword = password.trim();
-
-    // Log the payload for debugging
-    console.log('Login payload:', { email: trimmedEmail, password: trimmedPassword });
-
     try {
-      await login(trimmedEmail, trimmedPassword);
+      await loginUser(email.trim().toLowerCase(), password.trim());
     } catch (err) {
       console.error('Login error:', err);
       let errorMessage = 'Login failed. Please try again.';

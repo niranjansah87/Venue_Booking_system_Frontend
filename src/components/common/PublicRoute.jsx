@@ -2,14 +2,14 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 
 function PublicRoute({ children }) {
-  const user = JSON.parse(localStorage.getItem('user')); // Get user from localStorage
+  const user = JSON.parse(localStorage.getItem('user')); // Only check user
 
-  // Check if the user is already logged in, and redirect to the dashboard if logged in
+  // Redirect authenticated users to their dashboard
   if (user) {
-    return <Navigate to="/aonecafe/admin/dashboard" replace />; 
+    return <Navigate to="/booking" replace />;
   }
 
-  return children; // Return the public content if user is not logged in
+  return children; // Allow access to public routes if user is not logged in
 }
 
 export default PublicRoute;

@@ -1,44 +1,40 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Menu, User, ChevronDown, LogOut, User2, Settings, Calendar, LayoutDashboard, MapPin, Clock, Tag, Utensils, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Menu, User2, ChevronDown, LogOut, Settings, Calendar, LayoutDashboard, MapPin, Clock, Tag, Utensils, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'react-toastify';
-import api from '../../services/api'; // Assuming this is your Axios instance
 
-const AdminHeader = ({ 
-  toggleSidebar, 
-  userMenuOpen, 
-  setUserMenuOpen, 
-  user, 
-  handleLogout, // Remove this prop if implementing logout here
+const AdminHeader = ({
+  toggleSidebar,
+  userMenuOpen,
+  setUserMenuOpen,
+  user, // This is the admin object from AuthContext
+  handleLogout,
   sidebarOpen,
 }) => {
   const [localUser, setLocalUser] = useState(null);
   const menuRef = useRef(null);
-  const navigate = useNavigate();
 
-  // Fetch user data from localStorage
+  // Fetch admin data from localStorage
   const fetchUserFromStorage = () => {
     try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
+      const storedAdmin = localStorage.getItem('admin'); // Use 'admin' key
+      if (storedAdmin) {
+        const parsedAdmin = JSON.parse(storedAdmin);
         return {
-          name: parsedUser.name || 'Guest',
-          email: parsedUser.email || 'No email provided',
-          avatar: parsedUser.avatar || null,
+          name: parsedAdmin.name || 'Admin',
+          email: parsedAdmin.email || 'No email provided',
+          avatar: parsedAdmin.avatar || null,
         };
       }
       return {
-        name: 'Guest',
+        name: 'Admin',
         email: 'No email provided',
         avatar: null,
       };
     } catch (error) {
-      console.error('Error parsing user from localStorage:', error);
+      console.error('Error parsing admin from localStorage:', error);
       return {
-        name: 'Guest',
+        name: 'Admin',
         email: 'No email provided',
         avatar: null,
       };
@@ -50,8 +46,8 @@ const AdminHeader = ({
     setLocalUser(fetchUserFromStorage());
 
     const handleStorageChange = (event) => {
-      if (event.key === 'user') {
-        console.log('localStorage user updated:', event.newValue);
+      if (event.key === 'admin') {
+        console.log('localStorage admin updated:', event.newValue);
         setLocalUser(fetchUserFromStorage());
       }
     };
@@ -76,24 +72,6 @@ const AdminHeader = ({
     };
   }, [userMenuOpen, setUserMenuOpen]);
 
-  // Handle logout
-  const onLogout = async () => {
-    try {
-      // Call backend logout endpoint
-      await api.post('/api/admin/logout', {}, { withCredentials: true });
-      // Clear localStorage
-      localStorage.removeItem('user');
-      // Clear cookies (optional, if client-side cookies are used)
-      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
-      toast.success('Logged out successfully');
-      // Redirect to login
-      navigate('/aonecafe/admin/login');
-    } catch (error) {
-      console.error('Error during logout:', error);
-      toast.error('Failed to log out. Please try again.');
-    }
-  };
-
   const navItems = [
     { name: 'Dashboard', path: '/aonecafe/admin/dashboard', icon: LayoutDashboard },
     { name: 'Bookings', path: '/aonecafe/admin/bookings', icon: Calendar },
@@ -104,8 +82,8 @@ const AdminHeader = ({
     { name: 'Users', path: '/aonecafe/admin/users', icon: Users },
   ];
 
-  // Use localUser if available, otherwise fall back to user prop
-  const displayUser = localUser || user || { name: 'Guest', email: 'No email provided', avatar: null };
+  // Use user prop (admin from AuthContext) if available, otherwise fall back to localUser
+  const displayUser = user || localUser || { name: 'Admin', email: 'No email provided', avatar: null };
 
   // Compute half name (first word of name)
   const halfName = displayUser.name.split(' ')[0];
@@ -155,8 +133,8 @@ const AdminHeader = ({
           >
             <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-800 flex items-center justify-center text-white border-2 border-transparent gradient-border hover:shadow-glow transition-all duration-300">
               <img
-                src="/avatar.png"
-                alt="User avatar"
+                src={displayUser.avatar || '/avatar.png'}
+                alt="Admin avatar"
                 className="w-full h-full rounded-full object-cover"
               />
             </div>
@@ -167,7 +145,7 @@ const AdminHeader = ({
               <ChevronDown className="h-5 w-5 text-white" />
             </div>
           </button>
-          
+
           <AnimatePresence>
             {userMenuOpen && (
               <motion.div
@@ -185,6 +163,7 @@ const AdminHeader = ({
                 <Link
                   to="/aonecafe/admin/profile"
                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                  onClick={() => setUserMenuOpen(false)}
                 >
                   <User2 className="h-4 w-4 mr-2" />
                   Your Profile
@@ -192,13 +171,17 @@ const AdminHeader = ({
                 <Link
                   to="/aonecafe/admin/settings"
                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                  onClick={() => setUserMenuOpen(false)}
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
                 </Link>
                 <div className="border-t border-gray-200 my-1"></div>
                 <button
-                  onClick={onLogout}
+                  onClick={() => {
+                    handleLogout();
+                    setUserMenuOpen(false);
+                  }}
                   className="flex items-center w-full text-left px-4 py-2 text-sm text-error-600 hover:bg-error-50 hover:text-error-700 transition-colors"
                   aria-label="Sign out"
                 >

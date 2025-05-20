@@ -1,15 +1,22 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
-function ProtectedRoute({ children, adminOnly = false }) {
-  const user = JSON.parse(localStorage.getItem('user')); // Get user from localStorage
+function ProtectedRoute({ children }) {
+  const location = useLocation();
+  const user = JSON.parse(localStorage.getItem('user'));
+  const admin = JSON.parse(localStorage.getItem('admin'));
 
-  // Check if the user is authenticated and if the route requires admin only
-  if (!user || (adminOnly && user.role !== 'admin')) {
-    return <Navigate to="/aonecafe/admin/login" replace />; 
+  const isAdminRoute = location.pathname.startsWith('/aonecafe/admin');
+
+  if (isAdminRoute && !admin) {
+    return <Navigate to="/aonecafe/admin/login" replace />;
   }
 
-  return children; // Return the protected content if authenticated
+  if (!isAdminRoute && !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 }
 
 export default ProtectedRoute;
