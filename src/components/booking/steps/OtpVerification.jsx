@@ -6,7 +6,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { showToast } from '../../../utils/toastUtils';
 import { Link } from 'react-router-dom';
 
-const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData }) => {
+const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData = {} }) => {
   const [otp, setOtp] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
@@ -18,6 +18,7 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
   const hasCreatedBooking = useRef(false);
   const hasShownToast = useRef(false);
   const mountCount = useRef(0);
+  const phoneRef = useRef(null); // Store phone number persistently
 
   // Signup form
   const {
@@ -32,6 +33,28 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
   // Local email state for non-logged-in users after signup
   const [localEmail, setLocalEmail] = useState('');
 
+  // Initialize bookingData if undefined
+  useEffect(() => {
+    if (!bookingData || Object.keys(bookingData).length === 0) {
+      updateBookingData('init', {
+        email: '',
+        phone: '',
+        customer_phone: '',
+        user_id: null,
+        event_date: '2025-06-01', // Replace with actual data
+        event_id: 1, // Replace with actual data
+        guest_count: 50, // Replace with actual data
+        venue_id: 1, // Replace with actual data
+        shift_id: 1, // Replace with actual data
+        package_id: 1, // Replace with actual data
+        selected_menus: {}, // Replace with actual data
+        base_fare: 1000, // Replace with actual data
+        extra_charges: 0, // Replace with actual data
+        total_fare: 1000, // Replace with actual data
+      });
+    }
+  }, [bookingData, updateBookingData]);
+
   // Debug user state
   useEffect(() => {
     console.log('OtpVerification: user state:', {
@@ -39,21 +62,27 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
       isLoggedIn: !!user,
       localEmail,
       bookingData,
+      phoneRef: phoneRef.current,
     });
   }, [user, localEmail, bookingData]);
 
   // Ensure bookingData.phone is set after signup or login
   useEffect(() => {
-    if (localEmail && bookingData?.phone) {
+    if (localEmail && phoneRef.current) {
       updateBookingData('email', localEmail);
-    } else if (user?.email && user?.phone) {
+      updateBookingData('phone', phoneRef.current);
+      updateBookingData('customer_phone', phoneRef.current);
+    } else if (user?.email && (user?.phone || phoneRef.current)) {
       updateBookingData('email', user.email);
-      updateBookingData('phone', user.phone); // Ensure phone is set
+      updateBookingData('phone', user.phone || phoneRef.current);
+      updateBookingData('customer_phone', user.phone || phoneRef.current);
+      updateBookingData('user_id', user.id);
     } else {
       updateBookingData('email', '');
-      updateBookingData('phone', ''); // Reset phone if not available
+      updateBookingData('phone', '');
+      updateBookingData('customer_phone', '');
     }
-  }, [localEmail, user, updateBookingData, bookingData]);
+  }, [localEmail, user, updateBookingData]);
 
   // Reset localEmail when user is null
   useEffect(() => {
@@ -62,6 +91,7 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
       setLocalEmail('');
       updateBookingData('email', '');
       updateBookingData('phone', '');
+      updateBookingData('customer_phone', '');
     }
   }, [user, localEmail, updateBookingData]);
 
@@ -103,8 +133,10 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
         console.log('OTP send response:', response);
         hasSentOtp.current = true;
         setIsOtpSent(true);
-        // Ensure phone is stored in bookingData
+        // Store phone number persistently
+        phoneRef.current = targetPhone;
         updateBookingData('phone', targetPhone);
+        updateBookingData('customer_phone', targetPhone);
         if (!hasShownToast.current) {
           console.log('Triggering toast for OTP sent');
           showToast('OTP sent to your email and phone.', {
@@ -128,10 +160,10 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
   // Send OTP on mount for logged-in users or after signup
   useEffect(() => {
     mountCount.current += 1;
-    console.log(`OtpVerification mounted ${mountCount.current} times, email: ${localEmail || user?.email}, phone: ${bookingData?.phone}`);
+    console.log(`OtpVerification mounted ${mountCount.current} times, email: ${localEmail || user?.email}, phone: ${bookingData?.phone || phoneRef.current}`);
 
     if ((user || localEmail) && !isOtpSent) {
-      const phone = bookingData?.phone || user?.phone;
+      const phone = bookingData?.phone || user?.phone || phoneRef.current;
       if (!phone || !/^\d{10}$/.test(phone)) {
         console.error('Phone number is missing or invalid:', phone);
         setError('A valid 10-digit phone number is required.');
@@ -178,7 +210,7 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
 
       // Construct payload matching backend expectations
       const payload = {
-        user_id: bookingData.user_id || user?.id, // Assuming user.id is available after login
+        user_id: bookingData.user_id || user?.id,
         event_date: bookingData.event_date || '2025-06-01', // Replace with actual event date
         event_id: bookingData.event_id || 1, // Replace with actual event ID
         guest_count: bookingData.guest_count || 50, // Replace with actual guest count
@@ -189,7 +221,7 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
         base_fare: bookingData.base_fare || 1000, // Replace with actual base fare
         extra_charges: bookingData.extra_charges || 0, // Replace with actual extra charges
         total_fare: bookingData.total_fare || 1000, // Replace with actual total fare
-        customer_phone: bookingData.customer_phone || bookingData.phone,
+        customer_phone: bookingData.customer_phone || phoneRef.current,
       };
 
       console.log('Creating booking with payload:', payload);
@@ -251,9 +283,10 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
       await loginUser(data.email, data.password, false);
       // Update booking data and local email
       updateBookingData('name', data.name);
-      updateBookingData('phone', data.phone); // Ensure phone is set
+      updateBookingData('phone', data.phone);
+      updateBookingData('customer_phone', data.phone);
       updateBookingData('email', data.email);
-      updateBookingData('customer_phone', data.phone); // Set customer_phone for backend
+      phoneRef.current = data.phone; // Store phone persistently
       setLocalEmail(data.email);
       // Reset form and clear errors
       reset();
@@ -302,7 +335,7 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
     hasSentOtp.current = false;
     hasShownToast.current = false;
     setIsOtpSent(false);
-    const phone = bookingData?.phone || user?.phone;
+    const phone = bookingData?.phone || user?.phone || phoneRef.current;
     if (!phone || !/^\d{10}$/.test(phone)) {
       setError('A valid 10-digit phone number is required.');
       return;
@@ -377,9 +410,7 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
                     message: 'Name should be at least 2 characters',
                   },
                 })}
-                className={`pl-10
-
- w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
+                className={`pl-10 w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
                   signupErrors.name
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-200'
                     : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200'
