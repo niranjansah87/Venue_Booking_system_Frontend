@@ -54,7 +54,16 @@ const MenuSelection = ({ packageId, selectedMenus, updateBookingData }) => {
           toast.warn('No menus available for this package.');
         } else {
           setMenus(validatedMenus);
-          setActiveMenu(validatedMenus[0]?.id || null);
+          const firstMenuId = validatedMenus[0]?.id || null;
+          setActiveMenu(firstMenuId);
+          // Set initial menuId in bookingData
+          if (firstMenuId) {
+            updateBookingData('menuId', firstMenuId);
+            // Initialize selectedMenus for the first menu if empty
+            if (!selectedMenus[firstMenuId]) {
+              updateBookingData('selectedMenus', { ...selectedMenus, [firstMenuId]: [] });
+            }
+          }
         }
       } catch (error) {
         const errorMessage = error.message || 'Failed to load menus.';
@@ -67,9 +76,26 @@ const MenuSelection = ({ packageId, selectedMenus, updateBookingData }) => {
     };
 
     fetchMenus();
-  }, [packageId]);
+  }, [packageId, updateBookingData, selectedMenus]);
+
+  const handleMenuSelect = (menuId) => {
+    if (!menuId) {
+      console.warn('No menuId provided for selection');
+      return;
+    }
+    setActiveMenu(menuId);
+    updateBookingData('menuId', menuId);
+    // Ensure selectedMenus has an entry for the menu
+    if (!selectedMenus[menuId]) {
+      updateBookingData('selectedMenus', { ...selectedMenus, [menuId]: [] });
+    }
+  };
 
   const handleMenuItemToggle = (menuId, itemName) => {
+    if (!menuId || !itemName) {
+      console.warn('Invalid menuId or itemName:', { menuId, itemName });
+      return;
+    }
     const currentMenuItems = selectedMenus[menuId] || [];
     const updatedMenuItems = currentMenuItems.includes(itemName)
       ? currentMenuItems.filter((name) => name !== itemName)
@@ -82,6 +108,7 @@ const MenuSelection = ({ packageId, selectedMenus, updateBookingData }) => {
 
     console.log('Updated selectedMenus:', updatedSelectedMenus);
     updateBookingData('selectedMenus', updatedSelectedMenus);
+    updateBookingData('menuId', menuId); // Ensure menuId is set
   };
 
   const getSelectedItemsCount = (menuId) => selectedMenus[menuId]?.length || 0;
@@ -151,7 +178,7 @@ const MenuSelection = ({ packageId, selectedMenus, updateBookingData }) => {
                   transition={{ duration: 0.3, delay: index * 0.1 }}
                   whileHover={{ scale: 1.02, boxShadow: '0 0 8px rgba(79, 70, 229, 0.3)' }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setActiveMenu(menu.id)}
+                  onClick={() => handleMenuSelect(menu.id)}
                   className={`w-full text-left px-5 py-3 rounded-lg shadow-sm transition-all duration-300 ${
                     activeMenu === menu.id
                       ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'

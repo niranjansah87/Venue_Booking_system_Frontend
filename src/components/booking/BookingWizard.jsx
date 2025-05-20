@@ -39,8 +39,6 @@ const steps = [
   },
 ];
 
-const OTP_STEP_ID = 'verification-confirmation';
-
 const BookingWizard = () => {
   const navigate = useNavigate();
   const { user, sendOtp, verifyOtp, sendConfirmation } = useAuth();
@@ -62,7 +60,7 @@ const BookingWizard = () => {
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        if (!parsedUser.id || !parsedUser.email || !parsedUser.name) {
+        if (!parsedUser.id || !parsedUser.email || !parsedUser.name || !parsedUser.phone) {
           throw new Error('Invalid user data in localStorage');
         }
         return {
@@ -72,6 +70,7 @@ const BookingWizard = () => {
           phone: parsedUser.phone || '',
         };
       } catch (error) {
+        console.error('Error parsing user data:', error);
         localStorage.removeItem('user');
         return { id: null, name: '', email: '', phone: '' };
       }
@@ -89,6 +88,7 @@ const BookingWizard = () => {
     venueId: null,
     shiftId: null,
     packageId: null,
+    menuId:null,
     selectedMenus: {},
     baseFare: 0,
     extraCharges: 0,
@@ -105,7 +105,26 @@ const BookingWizard = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Memoize bookingData
-  const memoizedBookingData = useMemo(() => ({ ...bookingData }), [bookingData]);
+  const memoizedBookingData = useMemo(() => ({ ...bookingData }), [JSON.stringify(bookingData)]);
+
+  // Sync bookingData with user changes
+  useEffect(() => {
+    if (user) {
+      setBookingData((prev) => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+      }));
+    } else {
+      setBookingData((prev) => ({
+        ...prev,
+        name: initialUserData.name,
+        email: initialUserData.email,
+        phone: initialUserData.phone,
+      }));
+    }
+  }, [user, initialUserData]);
 
   // Check if current step is complete
   const isStepComplete = useCallback(() => {
@@ -124,31 +143,17 @@ const BookingWizard = () => {
       return bookingData.packageId && Object.keys(bookingData.selectedMenus).length > 0;
     }
     if (stepId === 'fare') {
-      return bookingData.totalFare > 0;
+      return (
+        bookingData.baseFare > 0 &&
+        Number.isFinite(bookingData.extraCharges) &&
+        bookingData.totalFare > 0
+      );
     }
     if (stepId === 'verification-confirmation') {
       return isComplete;
     }
     return false;
   }, [currentStep, bookingData, isAvailable, isComplete]);
-
-  // Sync bookingData with user changes
-  useEffect(() => {
-    if (user) {
-      setBookingData((prev) => ({
-        ...prev,
-        name: user.name || prev.name,
-        email: user.email || prev.email,
-        phone: user.phone || prev.phone,
-      }));
-    } else {
-      setBookingData((prev) => ({
-        ...prev,
-        email: initialUserData.email,
-        phone: initialUserData.phone,
-      }));
-    }
-  }, [user, initialUserData]);
 
   const updateBookingData = useCallback((key, value) => {
     setBookingData((prev) => {
@@ -204,13 +209,16 @@ const BookingWizard = () => {
         selected_menus: selectedMenus,
         guest_count: guestCount,
       });
-      const { base_fare, extra_charges, total_fare } = response.data;
+      const { base_fare, extra_charges = 0, total_fare } = response.data; // Default to 0 if extra_charges is undefined
       setBookingData((prev) => ({
         ...prev,
         baseFare: base_fare,
         extraCharges: extra_charges,
         totalFare: total_fare,
       }));
+      if (extra_charges === 0) {
+        console.warn('calculateFare returned extra_charges: 0');
+      }
     } catch (error) {
       showToast(error.response?.data?.message || 'Failed to calculate fare.', { type: 'error' });
       throw error;
@@ -230,10 +238,13 @@ const BookingWizard = () => {
           'venueId',
           'shiftId',
           'packageId',
+          'menuId',
           'guestCount',
           'name',
           'email',
           'phone',
+          'baseFare',
+          'totalFare',
         ];
         const missingFields = requiredFields.filter(
           (field) => !bookingData[field] || bookingData[field] === null
@@ -241,50 +252,92 @@ const BookingWizard = () => {
         if (missingFields.length > 0) {
           throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
         }
+        if (!Number.isFinite(bookingData.extraCharges)) {
+          console.warn('extraCharges is invalid, recalculating fare');
+          await calculateFare();
+        }
         if (!user?.id) {
           throw new Error('User ID not found. Please log in again.');
         }
+        // Ensure selectedMenus is an object with menu ID
+        let selectedMenus = bookingData.selectedMenus;
+        const menuId = bookingData.menuId; // Use menuId from bookingData
+        if (!menuId) {
+          throw new Error('No menu ID selected. Please select a menu.');
+        }
+        if (!selectedMenus || (typeof selectedMenus === 'object' && Object.keys(selectedMenus).length === 0)) {
+          selectedMenus = { [menuId]: [] };
+          console.warn(`selected_menus is empty; setting to { ${menuId}: [] }`);
+        } else if (Array.isArray(selectedMenus)) {
+          console.warn(`selected_menus is an array; converting to { ${menuId}: [...] }`);
+          selectedMenus = { [menuId]: selectedMenus };
+        } else if (Object.values(selectedMenus).some((menu) => !Array.isArray(menu))) {
+          console.warn(`selected_menus has invalid values; converting to { ${menuId}: [...] }`);
+          selectedMenus = { [menuId]: Object.values(selectedMenus).flat() };
+        } else if (!selectedMenus[menuId]) {
+          console.warn(`selected_menus missing menuId ${menuId}; restructuring`);
+          selectedMenus = { [menuId]: Object.values(selectedMenus).flat() };
+        }
+
         const payload = {
           user_id: user.id,
           event_id: bookingData.event_id,
           venue_id: bookingData.venueId,
           shift_id: bookingData.shiftId,
           package_id: bookingData.packageId,
-          guest_count: bookingData.guestCount,
+          guest_count: Number(bookingData.guestCount),
           event_date: bookingData.date.toISOString().split('T')[0],
-          selected_menus: bookingData.selectedMenus,
-          customer_name: bookingData.name,
-          customer_email: bookingData.email,
-          customer_phone: bookingData.phone,
-          base_fare: bookingData.baseFare,
-          extra_charges: bookingData.extraCharges,
-          total_fare: bookingData.totalFare,
+          selected_menus: selectedMenus,
+          // customer_name: bookingData.name || user.name || 'Unknown',
+          // customer_email: bookingData.email || user.email || 'unknown@example.com',
+          customer_phone: bookingData.phone.startsWith('+977') ? bookingData.phone : `+977${bookingData.phone}`,
+          base_fare: Number(bookingData.baseFare),
+          extra_charges: Number(bookingData.extraCharges || 0),
+          total_fare: Number(bookingData.totalFare),
         };
-        const response = await api.post('/api/admin/bookings/store', payload);
+        console.log('Booking payload:', JSON.stringify(payload, null, 2));
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const token = storedUser.token;
+        const response = await api.post('/api/admin/bookings/store', payload, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
         setBookingId(response.data.bookingId);
-        await sendConfirmation(response.data.bookingId, bookingData.email);
+        await sendConfirmation(response.data.bookingId, bookingData.email, bookingData.phone);
         setIsComplete(true);
-        setCurrentStep(currentStep);
+        showToast('Booking confirmed successfully!', { type: 'success' });
       } catch (error) {
+        console.error('Booking error:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+        });
         const errorMessage =
           error.response?.data?.errors?.map((err) => err.msg).join(', ') ||
           error.response?.data?.message ||
           error.message ||
-          'Failed to store booking.';
+          'Failed to store booking. Please check your input and try again.';
         showToast(errorMessage, { type: 'error' });
         throw error;
       } finally {
         setSubmitting(false);
       }
     },
-    [verifyOtp, user, bookingData, sendConfirmation, currentStep]
+    [verifyOtp, user, bookingData, sendConfirmation, calculateFare]
   );
 
   const sendOtpCallback = useCallback(
-    async (email) => {
-      return await sendOtp(email);
+    async () => {
+      const email = memoizedBookingData.email;
+      const phone = memoizedBookingData.phone;
+      if (!email || !phone) {
+        showToast('Email and phone number are required.', { type: 'error' });
+        throw new Error('Email and phone number are required');
+      }
+      return await sendOtp(email, phone);
     },
-    [sendOtp]
+    [sendOtp, memoizedBookingData.email, memoizedBookingData.phone]
   );
 
   const handleNext = useCallback(() => {
@@ -314,16 +367,14 @@ const BookingWizard = () => {
           {steps.map((step, index) => (
             <div key={step.id} className="flex-1 text-center">
               <div
-                className={`mx-auto w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
-                  index <= currentStep ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
-                }`}
+                className={`mx-auto w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${index <= currentStep ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
+                  }`}
               >
                 {index + 1}
               </div>
               <p
-                className={`mt-3 text-sm font-medium ${
-                  index <= currentStep ? 'text-primary-600' : 'text-gray-500'
-                }`}
+                className={`mt-3 text-sm font-medium ${index <= currentStep ? 'text-primary-600' : 'text-gray-500'
+                  }`}
               >
                 {step.title}
               </p>
@@ -484,33 +535,39 @@ const BookingWizard = () => {
             })}
           </div>
         )}
-       {steps[currentStep].id === 'verification-confirmation' && (
-  <div>
-    {isComplete ? (() => {
-      const ConfirmationComponent = MemoizedComponents[BookingConfirmation.name];
-      return (
-        <ConfirmationComponent
-          bookingId={bookingId}
-          date={memoizedBookingData.date}
-          guestCount={memoizedBookingData.guestCount}
-          totalFare={memoizedBookingData.totalFare}
-          email={memoizedBookingData.email}
-        />
-      );
-    })() : (() => {
-      const OtpComponent = MemoizedComponents[OtpVerification.name];
-      return (
-        <OtpComponent
-          email={memoizedBookingData.email}
-          verifyOtp={handleVerifyOtp}
-          submitting={submitting}
-          updateBookingData={updateBookingData}
-          sendOtp={sendOtpCallback}
-        />
-      );
-    })()}
-  </div>
-)}
+        {steps[currentStep].id === 'verification-confirmation' && (
+          <div>
+            {isComplete ? (
+              (() => {
+                const ConfirmationComponent = MemoizedComponents[BookingConfirmation.name];
+                return (
+                  <ConfirmationComponent
+                    bookingId={bookingId}
+                    date={memoizedBookingData.date}
+                    guestCount={memoizedBookingData.guestCount}
+                    totalFare={memoizedBookingData.totalFare}
+                    email={memoizedBookingData.email}
+                  />
+                );
+              })()
+            ) : (
+              (() => {
+                const OtpComponent = MemoizedComponents[OtpVerification.name];
+                return (
+                  <OtpComponent
+                    email={memoizedBookingData.email}
+                    phone={memoizedBookingData.phone}
+                    verifyOtp={handleVerifyOtp}
+                    submitting={submitting}
+                    updateBookingData={updateBookingData}
+                    sendOtp={sendOtpCallback}
+                    bookingData={memoizedBookingData}
+                  />
+                );
+              })()
+            )}
+          </div>
+        )}
 
       </motion.div>
 
