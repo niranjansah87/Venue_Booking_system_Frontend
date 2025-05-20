@@ -21,14 +21,14 @@ const MenuSelection = ({ packageId, selectedMenus, updateBookingData }) => {
   useEffect(() => {
     const fetchMenus = async () => {
       if (!packageId) {
-        console.log('No packageId provided, skipping menu fetch.');
+        // console.log('No packageId provided, skipping menu fetch.');
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        console.log(`Fetching menus for packageId: ${packageId}`);
+        // console.log(`Fetching menus for packageId: ${packageId}`);
         const data = await getMenusByPackageId(packageId);
         console.log('Menu data received:', data);
 
@@ -76,7 +76,7 @@ const MenuSelection = ({ packageId, selectedMenus, updateBookingData }) => {
     };
 
     fetchMenus();
-  }, [packageId, updateBookingData, selectedMenus]);
+  }, [packageId, updateBookingData]);
 
   const handleMenuSelect = (menuId) => {
     if (!menuId) {
@@ -92,7 +92,7 @@ const MenuSelection = ({ packageId, selectedMenus, updateBookingData }) => {
   };
 
   const handleMenuItemToggle = (menuId, itemName) => {
-   e.preventDefault();
+
     if (!menuId || !itemName) {
       console.warn('Invalid menuId or itemName:', { menuId, itemName });
       return;
@@ -107,7 +107,7 @@ const MenuSelection = ({ packageId, selectedMenus, updateBookingData }) => {
       [menuId]: updatedMenuItems,
     };
 
-    console.log('Updated selectedMenus:', updatedSelectedMenus);
+    // console.log('Updated selectedMenus:', updatedSelectedMenus);
     updateBookingData('selectedMenus', updatedSelectedMenus);
     updateBookingData('menuId', menuId); // Ensure menuId is set
   };
