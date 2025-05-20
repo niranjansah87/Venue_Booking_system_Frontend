@@ -42,24 +42,28 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
     });
   }, [user, localEmail, bookingData]);
 
-  // Update bookingData.email when localEmail or user.email changes
+  // Ensure bookingData.phone is set after signup or login
   useEffect(() => {
-    if (localEmail) {
+    if (localEmail && bookingData?.phone) {
       updateBookingData('email', localEmail);
-    } else if (user?.email) {
+    } else if (user?.email && user?.phone) {
       updateBookingData('email', user.email);
+      updateBookingData('phone', user.phone); // Ensure phone is set
     } else {
       updateBookingData('email', '');
+      updateBookingData('phone', ''); // Reset phone if not available
     }
-  }, [localEmail, user, updateBookingData]);
+  }, [localEmail, user, updateBookingData, bookingData]);
 
   // Reset localEmail when user is null
   useEffect(() => {
     if (!user && localEmail) {
       console.log('OtpVerification: Resetting localEmail as user is null');
       setLocalEmail('');
+      updateBookingData('email', '');
+      updateBookingData('phone', '');
     }
-  }, [user, localEmail]);
+  }, [user, localEmail, updateBookingData]);
 
   // Debounce sendOtp to prevent rapid calls
   const debounceSendOtp = useCallback((fn) => {
@@ -99,6 +103,8 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
         console.log('OTP send response:', response);
         hasSentOtp.current = true;
         setIsOtpSent(true);
+        // Ensure phone is stored in bookingData
+        updateBookingData('phone', targetPhone);
         if (!hasShownToast.current) {
           console.log('Triggering toast for OTP sent');
           showToast('OTP sent to your email and phone.', {
@@ -116,7 +122,7 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
         setSendingOtp(false);
       }
     }),
-    [isOtpSent, sendingOtp, sendOtp]
+    [isOtpSent, sendingOtp, sendOtp, updateBookingData]
   );
 
   // Send OTP on mount for logged-in users or after signup
@@ -148,29 +154,58 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
     hasCreatedBooking.current = true;
     try {
       // Validate required fields
-      const requiredFields = ['email', 'phone', 'name'];
+      const requiredFields = [
+        'user_id',
+        'event_date',
+        'event_id',
+        'guest_count',
+        'venue_id',
+        'shift_id',
+        'package_id',
+        'selected_menus',
+        'base_fare',
+        'extra_charges',
+        'total_fare',
+        'customer_phone',
+      ];
       const missingFields = requiredFields.filter((field) => !bookingData[field]);
       if (missingFields.length > 0) {
         throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
       }
-      if (!/^\d{10}$/.test(bookingData.phone)) {
+      if (!/^\d{10}$/.test(bookingData.customer_phone)) {
         throw new Error('Phone number must be exactly 10 digits');
       }
 
-      console.log('Creating booking with payload:', bookingData);
+      // Construct payload matching backend expectations
+      const payload = {
+        user_id: bookingData.user_id || user?.id, // Assuming user.id is available after login
+        event_date: bookingData.event_date || '2025-06-01', // Replace with actual event date
+        event_id: bookingData.event_id || 1, // Replace with actual event ID
+        guest_count: bookingData.guest_count || 50, // Replace with actual guest count
+        venue_id: bookingData.venue_id || 1, // Replace with actual venue ID
+        shift_id: bookingData.shift_id || 1, // Replace with actual shift ID
+        package_id: bookingData.package_id || 1, // Replace with actual package ID
+        selected_menus: bookingData.selected_menus || {}, // Replace with actual menu selections
+        base_fare: bookingData.base_fare || 1000, // Replace with actual base fare
+        extra_charges: bookingData.extra_charges || 0, // Replace with actual extra charges
+        total_fare: bookingData.total_fare || 1000, // Replace with actual total fare
+        customer_phone: bookingData.customer_phone || bookingData.phone,
+      };
+
+      console.log('Creating booking with payload:', payload);
       const response = await fetch('https://noded.harshchaudhary.com.np/api/admin/bookings/store', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(bookingData),
+        body: JSON.stringify(payload),
         credentials: 'include',
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Booking creation failed:', errorData);
-        throw new Error(errorData.message || 'Failed to create booking');
+        throw new Error(errorData.error || errorData.message || 'Failed to create booking');
       }
 
       const result = await response.json();
@@ -216,8 +251,9 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
       await loginUser(data.email, data.password, false);
       // Update booking data and local email
       updateBookingData('name', data.name);
-      updateBookingData('phone', data.phone);
+      updateBookingData('phone', data.phone); // Ensure phone is set
       updateBookingData('email', data.email);
+      updateBookingData('customer_phone', data.phone); // Set customer_phone for backend
       setLocalEmail(data.email);
       // Reset form and clear errors
       reset();
@@ -341,7 +377,9 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
                     message: 'Name should be at least 2 characters',
                   },
                 })}
-                className={`pl-10 w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
+                className={`pl-10
+
+ w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
                   signupErrors.name
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-200'
                     : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200'
