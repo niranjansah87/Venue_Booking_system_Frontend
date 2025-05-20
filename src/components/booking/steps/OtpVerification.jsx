@@ -10,10 +10,12 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
   const [otp, setOtp] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
+  const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   const [error, setError] = useState(null);
   const [emailExists, setEmailExists] = useState(false);
-  const { user, sendOtp,loginUser } = useAuth();
+  const { user, sendOtp, loginUser } = useAuth();
   const hasSentOtp = useRef(false);
+  const hasCreatedBooking = useRef(false);
   const hasShownToast = useRef(false);
   const mountCount = useRef(0);
 
@@ -74,7 +76,13 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
 
   const sendOtpToEmail = useCallback(
     debounceSendOtp(async (targetEmail, targetPhone) => {
-      if (!targetEmail || !targetPhone || isOtpSent || sendingOtp || hasSentOtp.current) {
+      if (!targetEmail || !targetPhone || !/^\d{10}$/.test(targetPhone)) {
+        console.log('Skipping OTP send: Invalid email or phone', { targetEmail, targetPhone });
+        setError('A valid email and 10-digit phone number are required.');
+        showToast('Invalid email or phone number.', { toastId: 'otp-error', type: 'error' });
+        return;
+      }
+      if (isOtpSent || sendingOtp || hasSentOtp.current) {
         console.log('Skipping OTP send:', {
           targetEmail,
           targetPhone,
@@ -117,7 +125,12 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
     console.log(`OtpVerification mounted ${mountCount.current} times, email: ${localEmail || user?.email}, phone: ${bookingData?.phone}`);
 
     if ((user || localEmail) && !isOtpSent) {
-      const phone = bookingData?.phone || user?.phone || '9841234567'; // Fallback for testing
+      const phone = bookingData?.phone || user?.phone;
+      if (!phone || !/^\d{10}$/.test(phone)) {
+        console.error('Phone number is missing or invalid:', phone);
+        setError('A valid 10-digit phone number is required.');
+        return;
+      }
       sendOtpToEmail(localEmail || user?.email, phone);
     }
 
@@ -125,6 +138,49 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
       console.log('OtpVerification unmounting');
     };
   }, [sendOtpToEmail, user, localEmail, isOtpSent, bookingData]);
+
+  // Create booking after OTP verification
+  const createBooking = async (bookingData) => {
+    if (hasCreatedBooking.current) {
+      console.log('Skipping duplicate booking creation');
+      return;
+    }
+    hasCreatedBooking.current = true;
+    try {
+      // Validate required fields
+      const requiredFields = ['email', 'phone', 'name'];
+      const missingFields = requiredFields.filter((field) => !bookingData[field]);
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+      if (!/^\d{10}$/.test(bookingData.phone)) {
+        throw new Error('Phone number must be exactly 10 digits');
+      }
+
+      console.log('Creating booking with payload:', bookingData);
+      const response = await fetch('https://noded.harshchaudhary.com.np/api/admin/bookings/store', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Booking creation failed:', errorData);
+        throw new Error(errorData.message || 'Failed to create booking');
+      }
+
+      const result = await response.json();
+      console.log('Booking created successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Booking creation error:', error);
+      throw error;
+    }
+  };
 
   // Handle signup form submission and auto-login
   const onSignup = async (data) => {
@@ -161,8 +217,8 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
       // Update booking data and local email
       updateBookingData('name', data.name);
       updateBookingData('phone', data.phone);
-      setLocalEmail(data.email);
       updateBookingData('email', data.email);
+      setLocalEmail(data.email);
       // Reset form and clear errors
       reset();
       setEmailExists(false);
@@ -187,11 +243,22 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
 
   const handleOtpSubmit = async () => {
     try {
+      setIsCreatingBooking(true);
+      console.log('Verifying OTP:', otp);
       await verifyOtp(otp);
-      showToast('OTP verified successfully.', { toastId: 'otp-verified', type: 'success' });
+      console.log('OTP verified successfully');
+      // Create booking after OTP verification
+      await createBooking(bookingData);
+      showToast('Booking confirmed successfully.', { toastId: 'booking-success', type: 'success' });
     } catch (error) {
-      setError('Invalid OTP.');
-      showToast('Invalid OTP.', { toastId: 'otp-invalid', type: 'error' });
+      console.error('OTP or booking error:', error);
+      setError(error.message || 'Failed to verify OTP or create booking.');
+      showToast(error.message || 'Failed to confirm booking.', {
+        toastId: 'booking-error',
+        type: 'error',
+      });
+    } finally {
+      setIsCreatingBooking(false);
     }
   };
 
@@ -199,11 +266,15 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
     hasSentOtp.current = false;
     hasShownToast.current = false;
     setIsOtpSent(false);
-    const phone = bookingData?.phone || user?.phone || '9841234567'; // Fallback for testing
+    const phone = bookingData?.phone || user?.phone;
+    if (!phone || !/^\d{10}$/.test(phone)) {
+      setError('A valid 10-digit phone number is required.');
+      return;
+    }
     await sendOtpToEmail(localEmail || user?.email, phone);
   };
 
-  if (sendingOtp) {
+  if (sendingOtp || isCreatingBooking) {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
@@ -481,14 +552,14 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
         </div>
         <button
           onClick={handleOtpSubmit}
-          disabled={submitting || !otp}
+          disabled={submitting || isCreatingBooking || !otp}
           className={`w-full py-3 rounded-md transition-colors flex items-center justify-center ${
-            submitting || !otp
+            submitting || isCreatingBooking || !otp
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
               : 'bg-primary-600 text-white hover:bg-primary-700'
           }`}
         >
-          {submitting ? (
+          {(submitting || isCreatingBooking) ? (
             <>
               <Loader className="animate-spin h-5 w-5 mr-2" />
               Verifying...
