@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, User2, ChevronDown, LogOut, Settings, Calendar, LayoutDashboard, MapPin, Clock, Tag, Utensils, Users } from 'lucide-react';
+import { Menu, User2, ChevronDown, LogOut, Settings, Calendar, LayoutDashboard, MapPin, Clock, Tag, Utensils, Users,PartyPopper } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AdminHeader = ({
@@ -75,6 +75,7 @@ const AdminHeader = ({
   const navItems = [
     { name: 'Dashboard', path: '/aonecafe/admin/dashboard', icon: LayoutDashboard },
     { name: 'Bookings', path: '/aonecafe/admin/bookings', icon: Calendar },
+    { name: 'Events', path: '/aonecafe/admin/events', icon: PartyPopper },
     { name: 'Venues', path: '/aonecafe/admin/venues', icon: MapPin },
     { name: 'Shifts', path: '/aonecafe/admin/shifts', icon: Clock },
     { name: 'Packages', path: '/aonecafe/admin/packages', icon: Tag },

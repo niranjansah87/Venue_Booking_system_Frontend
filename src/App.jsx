@@ -32,6 +32,7 @@ import AdminProfilePage from './pages/admin/AdminProfilePage';
 import AdminSettings from './pages/admin/Settings';
 import ForgotPasswordPage from './pages/public/ForgotPasswordPage';
 import AdminForgotPassword from './pages/admin/AdminForgotPassword';
+import EventManagement from './pages/admin/EventManagement';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -140,6 +141,7 @@ function App() {
           >
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="/aonecafe/admin/dashboard" element={<Dashboard />} />
+             <Route path="/aonecafe/admin/events" element={<EventManagement />} />
             <Route path="/aonecafe/admin/bookings" element={<BookingsManagement />} />
             <Route path="/aonecafe/admin/venues" element={<VenuesManagement />} />
             <Route path="/aonecafe/admin/shifts" element={<ShiftsManagement />} />
