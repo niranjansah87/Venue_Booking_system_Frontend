@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 const PublicHeader = ({ isScrolled }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { user, logout, loading } = useAuth();
+  const { user, logoutUser, loading } = useAuth();
   const dropdownRef = useRef(null);
 
   const toggleMobileMenu = () => {
@@ -34,7 +34,7 @@ const PublicHeader = ({ isScrolled }) => {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await logoutUser();
       localStorage.removeItem('user'); // Clear user data from local storage
       setMobileMenuOpen(false);
       setDropdownOpen(false);
