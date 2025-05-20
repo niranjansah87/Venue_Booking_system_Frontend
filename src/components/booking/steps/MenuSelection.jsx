@@ -92,6 +92,7 @@ const MenuSelection = ({ packageId, selectedMenus, updateBookingData }) => {
   };
 
   const handleMenuItemToggle = (menuId, itemName) => {
+   e.preventDefault();
     if (!menuId || !itemName) {
       console.warn('Invalid menuId or itemName:', { menuId, itemName });
       return;
