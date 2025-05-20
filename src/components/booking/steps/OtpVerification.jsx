@@ -12,7 +12,7 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
   const [sendingOtp, setSendingOtp] = useState(false);
   const [error, setError] = useState(null);
   const [emailExists, setEmailExists] = useState(false);
-  const { user, sendOtp, login } = useAuth();
+  const { user, sendOtp,loginUser } = useAuth();
   const hasSentOtp = useRef(false);
   const hasShownToast = useRef(false);
   const mountCount = useRef(0);
@@ -157,7 +157,7 @@ const OtpVerification = ({ verifyOtp, submitting, updateBookingData, bookingData
 
       console.log('OtpVerification: Signup successful');
       // Auto-login after signup
-      await login(data.email, data.password, false);
+      await loginUser(data.email, data.password, false);
       // Update booking data and local email
       updateBookingData('name', data.name);
       updateBookingData('phone', data.phone);
