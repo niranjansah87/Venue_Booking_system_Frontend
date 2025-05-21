@@ -18,7 +18,7 @@ const HomePage = () => {
   const [featuredVenues, setFeaturedVenues] = useState([]);
   
   // Define backend URL from environment variable
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://noded.harshchaudhary.com.np';
 
   // Handle scroll for header background
   useEffect(() => {
@@ -359,10 +359,10 @@ const HomePage = () => {
                     alt={venue.name} 
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                   />
-                  <div className="absolute top-4 right-4 bg-white px-2 py-1 rounded-full text-sm font-medium flex items-center">
+                  {/* <div className="absolute top-4 right-4 bg-white px-2 py-1 rounded-full text-sm font-medium flex items-center">
                     <Star className="h-4 w-4 text-yellow-500 mr-1" />
                     {venue.rating}
-                  </div>
+                  </div> */}
                 </div>
                 
                 <div className="p-6">
