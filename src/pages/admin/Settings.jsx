@@ -1,10 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User2, Mail, Lock, CheckCircle, XCircle, Settings as SettingsIcon } from 'lucide-react';
 import { updateAdmin } from '../../services/userService';
+import { useAuth } from '../../contexts/AuthContext'; // Import useAuth
+import { toast } from 'react-toastify'; // For notifications
 
 const Settings = () => {
+  const { admin, logoutAdmin } = useAuth(); // Get admin and logoutAdmin from AuthContext
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -21,29 +23,51 @@ const Settings = () => {
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Load user data from localStorage
+  // Load admin data from AuthContext and localStorage
   useEffect(() => {
     try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setUserId(parsedUser.id);
+      // Prioritize AuthContext admin data
+      if (admin) {
+        setUserId(admin.id);
         setFormData({
-          name: parsedUser.name || '',
-          email: parsedUser.email || '',
+          name: admin.name || '',
+          email: admin.email || '',
           password: '',
           confirmPassword: '',
         });
         setOriginalData({
-          name: parsedUser.name || '',
-          email: parsedUser.email || '',
+          name: admin.name || '',
+          email: admin.email || '',
         });
+      } else {
+        // Fallback to localStorage
+        const storedAdmin = localStorage.getItem('admin');
+        if (storedAdmin) {
+          const parsedAdmin = JSON.parse(storedAdmin);
+          if (!parsedAdmin.id) {
+            throw new Error('Admin ID missing in localStorage');
+          }
+          setUserId(parsedAdmin.id);
+          setFormData({
+            name: parsedAdmin.name || '',
+            email: parsedAdmin.email || '',
+            password: '',
+            confirmPassword: '',
+          });
+          setOriginalData({
+            name: parsedAdmin.name || '',
+            email: parsedAdmin.email || '',
+          });
+        } else {
+          throw new Error('No admin data found in localStorage');
+        }
       }
+      console.log('Settings: Loaded admin data', { userId, admin });
     } catch (error) {
-      console.error('Error loading user from localStorage:', error);
-      setServerError('Failed to load user data');
+      console.error('Error loading admin from localStorage:', error);
+      setServerError('Failed to load admin data');
     }
-  }, []);
+  }, [admin]);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -78,6 +102,10 @@ const Settings = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!userId) {
+      setServerError('Admin ID is missing. Please log in again.');
+      return;
+    }
     if (!validateForm()) return;
 
     setLoading(true);
@@ -94,25 +122,37 @@ const Settings = () => {
         updateData.password = formData.password;
       }
 
+      console.log('Settings: Updating admin', { userId, updateData });
       await updateAdmin(userId, updateData);
 
       // Update localStorage
-      const updatedUser = {
+      const updatedAdmin = {
         id: userId,
         name: updateData.name,
         email: updateData.email,
       };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem('admin', JSON.stringify(updatedAdmin));
       // Update originalData to reflect new values
       setOriginalData({
         name: updateData.name,
         email: updateData.email,
       });
 
-      setSuccess('Profile updated successfully!');
+      setSuccess('Profile updated successfully! Logging out...');
       setFormData((prev) => ({ ...prev, password: '', confirmPassword: '' }));
+
+      // Trigger logout after 2 seconds to allow user to see success message
+      setTimeout(async () => {
+        try {
+          await logoutAdmin();
+        } catch (error) {
+          console.error('Logout after update failed:', error);
+          toast.error('Failed to log out. Please log out manually.');
+        }
+      }, 2000);
     } catch (error) {
-      setServerError(error.message);
+      console.error('Settings: Update error:', error);
+      setServerError(error.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -212,49 +252,7 @@ const Settings = () => {
               )}
             </div>
 
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                <Lock className="h-4 w-4 mr-1 text-primary-600" />
-                New Password (optional)
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`w-full px-4 py-2 border ${
-                  errors.password ? 'border-red-300' : 'border-gray-300'
-                } rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500`}
-                placeholder="Enter new password"
-              />
-              {errors.password && (
-                <p className="mt-1 text-xs text-red-600">{errors.password}</p>
-              )}
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label htmlFor="confirmPassword" className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                <Lock className="h-4 w-4 mr-1 text-primary-600" />
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className={`w-full px-4 py-2 border ${
-                  errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                } rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500`}
-                placeholder="Confirm new password"
-              />
-              {errors.confirmPassword && (
-                <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>
-              )}
-            </div>
+          
 
             {/* Submit Button */}
             <motion.button

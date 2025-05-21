@@ -66,19 +66,19 @@ const AdminHeader = ({
 
   // Reset inactivity timer on user activity
   const resetInactivityTimer = () => {
-    console.log('Resetting inactivity timer');
+    // console.log('Resetting inactivity timer');
     lastActivityRef.current = Date.now();
     setWarningOpen(false);
     clearTimeout(warningTimeoutRef.current);
     clearTimeout(inactivityTimeoutRef.current);
 
     warningTimeoutRef.current = setTimeout(() => {
-      console.log('Showing timeout warning');
+      // console.log('Showing timeout warning');
       setWarningOpen(true);
     }, INACTIVITY_LIMIT - WARNING_TIME);
 
     inactivityTimeoutRef.current = setTimeout(() => {
-      console.log('Executing auto logout');
+      // console.log('Executing auto logout');
       toast.info('Session timed out due to inactivity');
       handleAutoLogout();
     }, INACTIVITY_LIMIT);
