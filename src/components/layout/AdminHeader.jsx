@@ -1,23 +1,46 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, User2, ChevronDown, LogOut, Settings, Calendar, LayoutDashboard, MapPin, Clock, Tag, Utensils, Users,PartyPopper } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, User2, ChevronDown, LogOut, Settings, Calendar, LayoutDashboard, MapPin, Clock, Tag, Utensils, Users, PartyPopper } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
+import { useAuth } from '../../contexts/AuthContext'; // Import useAuth
 
 const AdminHeader = ({
   toggleSidebar,
   userMenuOpen,
   setUserMenuOpen,
-  user, // This is the admin object from AuthContext
-  handleLogout,
+  user,
+  logoutAdmin, // Prop may be missing or incorrect
   sidebarOpen,
 }) => {
   const [localUser, setLocalUser] = useState(null);
   const menuRef = useRef(null);
+  const [warningOpen, setWarningOpen] = useState(false);
+  const inactivityTimeoutRef = useRef(null);
+  const warningTimeoutRef = useRef(null);
+  const lastActivityRef = useRef(Date.now());
+  const navigate = useNavigate();
+  const { logoutAdmin: contextLogoutAdmin } = useAuth(); // Fallback to context
+
+  // Use prop if provided, otherwise use context
+  const logoutFunction = logoutAdmin || contextLogoutAdmin;
+
+  // Inactivity settings
+  const INACTIVITY_LIMIT = 1 * 60 * 1000; // 1 minute for testing
+  const WARNING_TIME = 30 * 1000; // 30 seconds before logout
+
+  // Debug props
+  useEffect(() => {
+    console.log('AdminHeader props:', { logoutAdmin, user, userMenuOpen, sidebarOpen });
+    if (!logoutAdmin) {
+      console.warn('logoutAdmin prop is missing or not a function. Using contextLogoutAdmin.');
+    }
+  }, [logoutAdmin]);
 
   // Fetch admin data from localStorage
   const fetchUserFromStorage = () => {
     try {
-      const storedAdmin = localStorage.getItem('admin'); // Use 'admin' key
+      const storedAdmin = localStorage.getItem('admin');
       if (storedAdmin) {
         const parsedAdmin = JSON.parse(storedAdmin);
         return {
@@ -40,6 +63,60 @@ const AdminHeader = ({
       };
     }
   };
+
+  // Reset inactivity timer on user activity
+  const resetInactivityTimer = () => {
+    console.log('Resetting inactivity timer');
+    lastActivityRef.current = Date.now();
+    setWarningOpen(false);
+    clearTimeout(warningTimeoutRef.current);
+    clearTimeout(inactivityTimeoutRef.current);
+
+    warningTimeoutRef.current = setTimeout(() => {
+      console.log('Showing timeout warning');
+      setWarningOpen(true);
+    }, INACTIVITY_LIMIT - WARNING_TIME);
+
+    inactivityTimeoutRef.current = setTimeout(() => {
+      console.log('Executing auto logout');
+      toast.info('Session timed out due to inactivity');
+      handleAutoLogout();
+    }, INACTIVITY_LIMIT);
+  };
+
+  // Handle auto logout
+  const handleAutoLogout = async () => {
+    try {
+      if (typeof logoutFunction !== 'function') {
+        throw new Error('logoutAdmin is not a function');
+      }
+      await logoutFunction();
+      setUserMenuOpen(false);
+      setLocalUser(null);
+      navigate('/aonecafe/admin/login', { replace: true });
+    } catch (error) {
+      console.error('Auto logout failed:', error);
+      toast.error('Failed to log out. Please try again.');
+    }
+  };
+
+  // Handle user activity events
+  useEffect(() => {
+    const handleActivity = () => {
+      resetInactivityTimer();
+    };
+
+    const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+    events.forEach((event) => window.addEventListener(event, handleActivity));
+
+    resetInactivityTimer();
+
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, handleActivity));
+      clearTimeout(warningTimeoutRef.current);
+      clearTimeout(inactivityTimeoutRef.current);
+    };
+  }, []);
 
   // Initialize localUser and listen for storage changes
   useEffect(() => {
@@ -83,15 +160,12 @@ const AdminHeader = ({
     { name: 'Users', path: '/aonecafe/admin/users', icon: Users },
   ];
 
-  // Use user prop (admin from AuthContext) if available, otherwise fall back to localUser
   const displayUser = user || localUser || { name: 'Admin', email: 'No email provided', avatar: null };
-
-  // Compute half name (first word of name)
   const halfName = displayUser.name.split(' ')[0];
 
   return (
     <header className="sticky top-0 z-20 flex items-center h-20 bg-gradient-to-r from-primary-600 to-primary-700 px-4 md:px-8 backdrop-blur-xs shadow-lg">
-      {/* Left section with mobile menu button and title */}
+      {/* Left section */}
       <div className="flex items-center space-x-4">
         <button
           onClick={toggleSidebar}
@@ -107,7 +181,7 @@ const AdminHeader = ({
         </Link>
       </div>
 
-      {/* Center section with navigation (desktop) */}
+      {/* Center navigation */}
       <nav className="hidden md:flex items-center justify-center flex-1 space-x-4">
         {navItems.map((item) => (
           <Link
@@ -179,9 +253,15 @@ const AdminHeader = ({
                 </Link>
                 <div className="border-t border-gray-200 my-1"></div>
                 <button
-                  onClick={() => {
-                    handleLogout();
-                    setUserMenuOpen(false);
+                  onClick={async () => {
+                    try {
+                      await logoutFunction();
+                      setUserMenuOpen(false);
+                      navigate('/aonecafe/admin/login', { replace: true });
+                    } catch (error) {
+                      console.error('Manual logout failed:', error);
+                      toast.error('Failed to log out. Please try again.');
+                    }
                   }}
                   className="flex items-center w-full text-left px-4 py-2 text-sm text-error-600 hover:bg-error-50 hover:text-error-700 transition-colors"
                   aria-label="Sign out"
@@ -194,6 +274,49 @@ const AdminHeader = ({
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Warning Modal */}
+      <AnimatePresence>
+        {warningOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl"
+            >
+              <h3 className="text-lg font-semibold text-gray-800">Session Timeout Warning</h3>
+              <p className="text-sm text-gray-600 mt-2">
+                Your session will expire in 30 seconds due to inactivity. Do you want to stay logged in?
+              </p>
+              <div className="flex justify-end space-x-4 mt-4">
+                <button
+                  onClick={async () => {
+                    await handleAutoLogout();
+                    setWarningOpen(false);
+                  }}
+                  className="px-4 py-2 text-sm text-error-600 hover:bg-error-50 rounded-lg"
+                >
+                  Log Out
+                </button>
+                <button
+                  onClick={resetInactivityTimer}
+                  className="px-4 py-2 text-sm text-white bg-primary-600 hover:bg-primary-700 rounded-lg"
+                >
+                  Stay Logged In
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 };
