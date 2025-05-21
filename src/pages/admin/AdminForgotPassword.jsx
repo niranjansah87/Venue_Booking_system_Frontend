@@ -17,7 +17,7 @@ function AdminForgotPassword() {
     setError('');
 
     try {
-      const response = await api.post(`${backendUrl}/api/admin/forgot-password`, { email });
+      const response = await api.post(`${backendUrl}api/admin/forgot-password`, { email });
       setMessage(response.data.message);
     } catch (err) {
       console.error('Forgot password error:', err);
