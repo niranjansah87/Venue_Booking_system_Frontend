@@ -26,8 +26,8 @@ const AdminHeader = ({
   const logoutFunction = logoutAdmin || contextLogoutAdmin;
 
   // Inactivity settings
-  const INACTIVITY_LIMIT = 1 * 60 * 1000; // 1 minute for testing
-  const WARNING_TIME = 30 * 1000; // 30 seconds before logout
+  const INACTIVITY_LIMIT = 5 * 60 * 1000; // 1 minute for testing
+  const WARNING_TIME = 3 * 1000; // 30 seconds before logout
 
   // Debug props
   useEffect(() => {

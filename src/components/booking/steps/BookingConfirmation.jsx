@@ -34,7 +34,7 @@ const BookingConfirmation = ({ bookingId, date, guestCount, totalFare, email }) 
           </div>
           <div className="flex justify-between text-gray-600">
             <span>Total Cost</span>
-            <span>${totalFare.toLocaleString()}</span>
+            <span>NPR {totalFare.toLocaleString()}</span>
           </div>
         </div>
       </div>
