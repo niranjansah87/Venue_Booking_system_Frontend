@@ -86,7 +86,7 @@ const VenueSelection = ({
             onClick={() => handleVenueSelect(venue.id)}
           >
             <img
-              src={`https://noded.harshchaudhary.com.np/${venue.image.replace(/\\/g, '/')}`}
+              src={`${venue.image.replace(/\\/g, '/')}`}
 
               alt={venue.name}
               className="w-full h-48 object-cover"
