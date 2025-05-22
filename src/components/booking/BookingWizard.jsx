@@ -88,7 +88,7 @@ const BookingWizard = () => {
     venueId: null,
     shiftId: null,
     packageId: null,
-    menuId:null,
+    menuId: null,
     selectedMenus: {},
     baseFare: 0,
     extraCharges: 0,
@@ -209,7 +209,7 @@ const BookingWizard = () => {
         selected_menus: selectedMenus,
         guest_count: guestCount,
       });
-      const { base_fare, extra_charges = 0, total_fare } = response.data; // Default to 0 if extra_charges is undefined
+      const { base_fare, extra_charges = 0, total_fare } = response.data;
       setBookingData((prev) => ({
         ...prev,
         baseFare: base_fare,
@@ -259,9 +259,8 @@ const BookingWizard = () => {
         if (!user?.id) {
           throw new Error('User ID not found. Please log in again.');
         }
-        // Ensure selectedMenus is an object with menu ID
         let selectedMenus = bookingData.selectedMenus;
-        const menuId = bookingData.menuId; // Use menuId from bookingData
+        const menuId = bookingData.menuId;
         if (!menuId) {
           throw new Error('No menu ID selected. Please select a menu.');
         }
@@ -288,14 +287,11 @@ const BookingWizard = () => {
           guest_count: Number(bookingData.guestCount),
           event_date: bookingData.date.toISOString().split('T')[0],
           selected_menus: selectedMenus,
-          // customer_name: bookingData.name || user.name || 'Unknown',
-          // customer_email: bookingData.email || user.email || 'unknown@example.com',
           customer_phone: bookingData.phone.startsWith('+977') ? bookingData.phone : `+977${bookingData.phone}`,
           base_fare: Number(bookingData.baseFare),
           extra_charges: Number(bookingData.extraCharges || 0),
           total_fare: Number(bookingData.totalFare),
         };
-        // console.log('Booking payload:', JSON.stringify(payload, null, 2));
         const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
         const token = storedUser.token;
         const response = await api.post('/api/admin/bookings/store', payload, {
@@ -359,29 +355,33 @@ const BookingWizard = () => {
   }, [currentStep, navigate]);
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-      <h1 className="text-3xl font-heading font-bold text-gray-900 mb-10 text-center">Plan Your Event</h1>
+    <div className="w-full max-w-full sm:max-w-3xl lg:max-w-4xl mx-auto py-8 sm:py-12 px-4 sm:px-8 lg:px-12">
+      <h1 className="text-2xl sm:text-3xl font-heading font-bold text-gray-900 mb-8 sm:mb-10 text-center">
+        Plan Your Event
+      </h1>
 
-      <div className="mb-12">
-        <div className="flex justify-between items-center">
+      <div className="mb-8 sm:mb-12">
+        <div className="flex flex-wrap justify-between items-center gap-2 sm:gap-4">
           {steps.map((step, index) => (
-            <div key={step.id} className="flex-1 text-center">
+            <div key={step.id} className="flex-1 min-w-[80px] text-center">
               <div
-                className={`mx-auto w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${index <= currentStep ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
-                  }`}
+                className={`mx-auto w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
+                  index <= currentStep ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
+                }`}
               >
                 {index + 1}
               </div>
               <p
-                className={`mt-3 text-sm font-medium ${index <= currentStep ? 'text-primary-600' : 'text-gray-500'
-                  }`}
+                className={`mt-2 text-xs sm:text-sm font-medium ${
+                  index <= currentStep ? 'text-primary-600' : 'text-gray-500'
+                }`}
               >
                 {step.title}
               </p>
             </div>
           ))}
         </div>
-        <div className="mt-4 relative">
+        <div className="mt-3 sm:mt-4 relative">
           <div className="absolute top-1/2 w-full h-1 bg-gray-200 transform -translate-y-1/2"></div>
           <div
             className="absolute top-1/2 h-1 bg-primary-600 transition-all duration-300 transform -translate-y-1/2"
@@ -396,10 +396,10 @@ const BookingWizard = () => {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.4 }}
-        className="bg-white rounded-xl shadow-lg p-8"
+        className="bg-white rounded-xl shadow-lg p-6 sm:p-8"
       >
         {steps[currentStep].id === 'event-details' && (
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-6 sm:gap-8">
             {steps[currentStep].components.map((Component) => {
               const ComponentMemo = MemoizedComponents[Component.name];
               return (
@@ -408,7 +408,7 @@ const BookingWizard = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="relative bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                  className="relative bg-gray-50 p-6 sm:p-8 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
                 >
                   <ComponentMemo
                     date={memoizedBookingData.date}
@@ -428,7 +428,7 @@ const BookingWizard = () => {
                       transition={{ duration: 0.2 }}
                       className="absolute top-4 right-4"
                     >
-                      <CheckCircle className="h-6 w-6 text-green-500" />
+                      <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
                     </motion.div>
                   )}
                   {Component.name === 'EventTypeSelection' && bookingData.event_id && (
@@ -438,7 +438,7 @@ const BookingWizard = () => {
                       transition={{ duration: 0.2 }}
                       className="absolute top-4 right-4"
                     >
-                      <CheckCircle className="h-6 w-6 text-green-500" />
+                      <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
                     </motion.div>
                   )}
                   {Component.name === 'GuestCount' && bookingData.guestCount && (
@@ -448,7 +448,7 @@ const BookingWizard = () => {
                       transition={{ duration: 0.2 }}
                       className="absolute top-4 right-4"
                     >
-                      <CheckCircle className="h-6 w-6 text-green-500" />
+                      <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
                     </motion.div>
                   )}
                   {Component.name === 'VenueSelection' && bookingData.venueId && (
@@ -458,7 +458,7 @@ const BookingWizard = () => {
                       transition={{ duration: 0.2 }}
                       className="absolute top-4 right-4"
                     >
-                      <CheckCircle className="h-6 w-6 text-green-500" />
+                      <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
                     </motion.div>
                   )}
                   {Component.name === 'ShiftSelection' && bookingData.shiftId && isAvailable && (
@@ -468,7 +468,7 @@ const BookingWizard = () => {
                       transition={{ duration: 0.2 }}
                       className="absolute top-4 right-4"
                     >
-                      <CheckCircle className="h-6 w-6 text-green-500" />
+                      <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
                     </motion.div>
                   )}
                 </motion.div>
@@ -477,7 +477,7 @@ const BookingWizard = () => {
           </div>
         )}
         {steps[currentStep].id === 'package-menu' && (
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-6 sm:gap-8">
             {steps[currentStep].components.map((Component) => {
               const ComponentMemo = MemoizedComponents[Component.name];
               return (
@@ -486,7 +486,7 @@ const BookingWizard = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="relative bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                  className="relative bg-gray-50 p-6 sm:p-8 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
                 >
                   <ComponentMemo
                     packageId={memoizedBookingData.packageId}
@@ -500,7 +500,7 @@ const BookingWizard = () => {
                       transition={{ duration: 0.2 }}
                       className="absolute top-4 right-4"
                     >
-                      <CheckCircle className="h-6 w-6 text-green-500" />
+                      <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
                     </motion.div>
                   )}
                   {Component.name === 'MenuSelection' && Object.keys(bookingData.selectedMenus).length > 0 && (
@@ -510,7 +510,7 @@ const BookingWizard = () => {
                       transition={{ duration: 0.2 }}
                       className="absolute top-4 right-4"
                     >
-                      <CheckCircle className="h-6 w-6 text-green-500" />
+                      <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
                     </motion.div>
                   )}
                 </motion.div>
@@ -568,16 +568,15 @@ const BookingWizard = () => {
             )}
           </div>
         )}
-
       </motion.div>
 
       {currentStep < steps.length - 1 && (
-        <div className="mt-10 flex justify-between">
+        <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-between gap-4 sm:gap-6">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleBack}
-            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors font-medium"
+            className="w-full sm:w-auto px-6 py-3 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors font-medium text-base"
           >
             Back
           </motion.button>
@@ -586,7 +585,7 @@ const BookingWizard = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleNext}
-              className="px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors font-medium"
+              className="w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors font-medium text-base"
             >
               Next
             </motion.button>

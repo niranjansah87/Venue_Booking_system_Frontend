@@ -3,14 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, User2, ChevronDown, LogOut, Settings, Calendar, LayoutDashboard, MapPin, Clock, Tag, Utensils, Users, PartyPopper } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { useAuth } from '../../contexts/AuthContext'; // Import useAuth
+import { useAuth } from '../../contexts/AuthContext';
 
 const AdminHeader = ({
   toggleSidebar,
   userMenuOpen,
   setUserMenuOpen,
   user,
-  logoutAdmin, // Prop may be missing or incorrect
+  logoutAdmin,
   sidebarOpen,
 }) => {
   const [localUser, setLocalUser] = useState(null);
@@ -20,22 +20,25 @@ const AdminHeader = ({
   const warningTimeoutRef = useRef(null);
   const lastActivityRef = useRef(Date.now());
   const navigate = useNavigate();
-  const { logoutAdmin: contextLogoutAdmin } = useAuth(); // Fallback to context
+  const { logoutAdmin: contextLogoutAdmin } = useAuth();
 
   // Use prop if provided, otherwise use context
   const logoutFunction = logoutAdmin || contextLogoutAdmin;
 
   // Inactivity settings
-  const INACTIVITY_LIMIT = 5 * 60 * 1000; // 1 minute for testing
-  const WARNING_TIME = 3 * 1000; // 30 seconds before logout
+  const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
+  const WARNING_TIME = 30 * 1000; // 30 seconds before logout
 
   // Debug props
   useEffect(() => {
-    console.log('AdminHeader props:', { logoutAdmin, user, userMenuOpen, sidebarOpen });
+    console.log('AdminHeader props:', { toggleSidebar, user, userMenuOpen, sidebarOpen, logoutAdmin });
+    if (!toggleSidebar) {
+      console.warn('toggleSidebar prop is missing or not a function.');
+    }
     if (!logoutAdmin) {
       console.warn('logoutAdmin prop is missing or not a function. Using contextLogoutAdmin.');
     }
-  }, [logoutAdmin]);
+  }, [toggleSidebar, logoutAdmin]);
 
   // Fetch admin data from localStorage
   const fetchUserFromStorage = () => {
@@ -66,19 +69,16 @@ const AdminHeader = ({
 
   // Reset inactivity timer on user activity
   const resetInactivityTimer = () => {
-    // console.log('Resetting inactivity timer');
     lastActivityRef.current = Date.now();
     setWarningOpen(false);
     clearTimeout(warningTimeoutRef.current);
     clearTimeout(inactivityTimeoutRef.current);
 
     warningTimeoutRef.current = setTimeout(() => {
-      // console.log('Showing timeout warning');
       setWarningOpen(true);
     }, INACTIVITY_LIMIT - WARNING_TIME);
 
     inactivityTimeoutRef.current = setTimeout(() => {
-      // console.log('Executing auto logout');
       toast.info('Session timed out due to inactivity');
       handleAutoLogout();
     }, INACTIVITY_LIMIT);
@@ -145,9 +145,20 @@ const AdminHeader = ({
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
     };
   }, [userMenuOpen, setUserMenuOpen]);
+
+  // Handle hamburger click
+  const handleHamburgerClick = (e) => {
+    console.log('Hamburger clicked, sidebarOpen:', sidebarOpen);
+    if (typeof toggleSidebar === 'function') {
+      toggleSidebar();
+    } else {
+      console.error('toggleSidebar is not a function');
+      toast.error('Unable to toggle sidebar. Please try refreshing the page.');
+    }
+  };
 
   const navItems = [
     { name: 'Dashboard', path: '/aonecafe/admin/dashboard', icon: LayoutDashboard },
@@ -165,113 +176,116 @@ const AdminHeader = ({
 
   return (
     <header className="sticky top-0 z-20 flex items-center h-20 bg-gradient-to-r from-primary-600 to-primary-700 px-4 md:px-8 backdrop-blur-xs shadow-lg">
-      {/* Left section */}
-      <div className="flex items-center space-x-4">
-        <button
-          onClick={toggleSidebar}
-          className="text-white hover:text-primary-400 transition-colors md:hidden"
-          aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-          title={sidebarOpen ? 'Close menu' : 'Open menu'}
-        >
-          <Menu className="h-8 w-8" />
-        </button>
-        <Link to="/aonecafe/admin/dashboard" className="text-2xl font-extrabold text-white flex items-center hover:text-primary-400 transition-colors">
-          <Calendar className="h-7 w-7 text-primary-400 mr-2" />
-          A One Cafe
-        </Link>
-      </div>
-
-      {/* Center navigation */}
-      <nav className="hidden md:flex items-center justify-center flex-1 space-x-4">
-        {navItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className="flex items-center text-white hover:text-primary-400 text-sm font-medium transition-colors"
-            title={item.name}
-          >
-            <item.icon className="h-5 w-5 mr-1" />
-            {item.name}
-          </Link>
-        ))}
-      </nav>
-
-      {/* Right section with user menu */}
-      <div className="flex items-center">
-        <div className="relative">
+      <div className="flex items-center justify-between w-full">
+        {/* Left section: Hamburger and Logo */}
+        <div className="flex items-center space-x-4">
           <button
-            onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="flex items-center space-x-2 focus:outline-none"
-            aria-label="Toggle user menu"
-            aria-expanded={userMenuOpen}
-            title="User menu"
+            onClick={handleHamburgerClick}
+            onTouchStart={handleHamburgerClick}
+            className="text-white hover:text-primary-400 transition-colors md:hidden p-2 rounded-full hover:bg-primary-800 focus:ring-2 focus:ring-primary-400 focus:outline-none"
+            aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            title={sidebarOpen ? 'Close menu' : 'Open menu'}
           >
-            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-800 flex items-center justify-center text-white border-2 border-transparent gradient-border hover:shadow-glow transition-all duration-300">
-              <img
-                src={displayUser.avatar || '/avatar.png'}
-                alt="Admin avatar"
-                className="w-full h-full rounded-full object-cover"
-              />
-            </div>
-            <div className="hidden md:flex md:items-center">
-              <span className="text-base font-semibold text-white mr-1">
-                {`Hello ${halfName}`}
-              </span>
-              <ChevronDown className="h-5 w-5 text-white" />
-            </div>
+            <Menu className="h-8 w-8" />
           </button>
+          <Link to="/aonecafe/admin/dashboard" className="text-2xl font-extrabold text-white flex items-center hover:text-primary-400 transition-colors">
+            <Calendar className="h-7 w-7 text-primary-400 mr-2" />
+            A One Cafe
+          </Link>
+        </div>
 
-          <AnimatePresence>
-            {userMenuOpen && (
-              <motion.div
-                ref={menuRef}
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-xl py-2 z-50 border border-gray-200/50"
-              >
-                <div className="px-4 py-3 border-b border-gray-200">
-                  <p className="text-sm font-semibold text-gray-800">{displayUser.name}</p>
-                  <p className="text-xs text-gray-500">{displayUser.email}</p>
-                </div>
-                <Link
-                  to="/aonecafe/admin/profile"
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
-                  onClick={() => setUserMenuOpen(false)}
+        {/* Center navigation (desktop) */}
+        <nav className="hidden md:flex items-center justify-center space-x-4 pl-5">
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className="flex items-center text-white hover:text-primary-400 text-sm font-medium transition-colors"
+              title={item.name}
+            >
+              <item.icon className="h-5 w-5 mr-1" />
+              {item.name}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Right section: User menu */}
+        <div className="ml-auto flex items-center">
+          <div className="relative">
+            <button
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-primary-400"
+              aria-label="Toggle user menu"
+              aria-expanded={userMenuOpen}
+              title="User menu"
+            >
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-800 flex items-center justify-center text-white border-2 border-transparent hover:shadow-glow transition-all duration-300">
+                <img
+                  src={displayUser.avatar || '/avatar.png'}
+                  alt="Admin avatar"
+                  className="w-full h-full rounded-full object-cover"
+                />
+              </div>
+              <div className="hidden md:flex md:items-center">
+                <span className="text-sm font-semibold text-white mr-1">
+                  {`Hello ${halfName}`}
+                </span>
+                <ChevronDown className="h-4 w-4 text-white" />
+              </div>
+            </button>
+
+            <AnimatePresence>
+              {userMenuOpen && (
+                <motion.div
+                  ref={menuRef}
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-xl py-2 z-50 border border-gray-200/50"
                 >
-                  <User2 className="h-4 w-4 mr-2" />
-                  Your Profile
-                </Link>
-                <Link
-                  to="/aonecafe/admin/settings"
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
-                  onClick={() => setUserMenuOpen(false)}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </Link>
-                <div className="border-t border-gray-200 my-1"></div>
-                <button
-                  onClick={async () => {
-                    try {
-                      await logoutFunction();
-                      setUserMenuOpen(false);
-                      navigate('/aonecafe/admin/login', { replace: true });
-                    } catch (error) {
-                      console.error('Manual logout failed:', error);
-                      toast.error('Failed to log out. Please try again.');
-                    }
-                  }}
-                  className="flex items-center w-full text-left px-4 py-2 text-sm text-error-600 hover:bg-error-50 hover:text-error-700 transition-colors"
-                  aria-label="Sign out"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign out
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <p className="text-sm font-semibold text-gray-800">{displayUser.name}</p>
+                    <p className="text-xs text-gray-500">{displayUser.email}</p>
+                  </div>
+                  <Link
+                    to="/aonecafe/admin/profile"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    <User2 className="h-4 w-4 mr-2" />
+                    Your Profile
+                  </Link>
+                  <Link
+                    to="/aonecafe/admin/settings"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </Link>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await logoutFunction();
+                        setUserMenuOpen(false);
+                        navigate('/aonecafe/admin/login', { replace: true });
+                      } catch (error) {
+                        console.error('Manual logout failed:', error);
+                        toast.error('Failed to log out. Please try again.');
+                      }
+                    }}
+                    className="flex items-center w-full text-left px-4 py-2 text-sm text-error-600 hover:bg-error-50 hover:text-error-700 transition-colors"
+                    aria-label="Sign out"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign out
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 

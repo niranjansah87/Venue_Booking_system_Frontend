@@ -26,11 +26,11 @@ const AdminSidebar = ({ mobile = false, onClose }) => {
   ];
   
   return (
-    <div className="h-full bg-gray-900 text-white flex flex-col">
+    <div className="h-full bg-gray-900 text-white flex flex-col shadow-lg">
       {mobile && (
         <div className="px-4 py-5 flex items-center justify-between border-b border-gray-800">
           <span className="text-xl font-bold">Admin Panel</span>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-primary-400">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -56,7 +56,7 @@ const AdminSidebar = ({ mobile = false, onClose }) => {
                   ? 'bg-primary-800 text-white' 
                   : 'text-gray-300 hover:bg-gray-800 hover:text-white'}
               `}
-              onClick={mobile && onClose}
+              onClick={mobile ? onClose : undefined}
             >
               <Icon className="h-5 w-5 mr-3" />
               {item.name}
@@ -66,7 +66,7 @@ const AdminSidebar = ({ mobile = false, onClose }) => {
       </nav>
       
       <div className="p-4 border-t border-gray-800">
-        <p className="text-xs text-gray-400">Admin Panel v1.0</p>
+       
       </div>
     </div>
   );
