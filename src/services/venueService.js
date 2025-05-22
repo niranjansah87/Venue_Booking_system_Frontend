@@ -43,7 +43,7 @@ export const updateVenue = async (id, venueData) => {
   try {
     const response = await api.put(`/api/admin/venues/update/${id}`, venueData, {
       withCredentials: true,
-      headers: { ' licencia-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
   } catch (error) {
