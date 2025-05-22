@@ -35,12 +35,7 @@ The application enables users to create a booking by following these steps:
 - **Screenshot**:
   <img src="./readme/1.png" alt="A One Cafe Booking Interface" width="600" />
 
-- **Video Demo**:
-  <video width="600" controls>
-    <source src="./readme/readme.mp4" type="video/mp4" />
-    Your browser does not support the video tag.
-  </video>
-  [View Video Demo](./readme/readme.mp4) *(Click to download or play if the video does not display)*
+- **Video Demo**: [View Video Demo](./readme/readme.mp4)
 
 ## Technologies Used
 
