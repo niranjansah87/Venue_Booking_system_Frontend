@@ -37,9 +37,9 @@ const AdminSidebar = ({ mobile = false, onClose }) => {
       )}
       
       <div className={`flex items-center justify-center p-6 ${mobile ? '' : 'border-b border-gray-800'}`}>
-        <div className="flex items-center space-x-2">
-          <Calendar className="h-8 w-8 text-primary-400" />
-          <span className="text-xl font-heading font-bold">A One Cafe</span>
+        <div className="flex items-center space-x-2 h-8">
+          {/* <Calendar className="h-8 w-8 text-primary-400" /> */}
+          {/* <span className="text-xl font-heading font-bold">A One Cafe</span> */}
         </div>
       </div>
       
