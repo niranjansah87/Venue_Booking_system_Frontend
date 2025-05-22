@@ -103,8 +103,8 @@ const VenueSelection = ({
                 {selectedVenue === venue.id && <Check className="h-6 w-6 text-primary-600" />}
               </div>
               <div className="flex items-center text-gray-600">
-                <MapPin className="h-5 w-5 text-primary-500 mr-2" />
-                <span>Venue Location</span>
+                {/* <MapPin className="h-5 w-5 text-primary-500 mr-2" /> */}
+                {/* <span>Venue Location</span> */}
               </div>
             </div>
           </motion.div>
