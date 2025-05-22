@@ -85,7 +85,7 @@ const HomePage = () => {
             return {
               id: venue.id || String(Math.random()),
               name: venue.name,
-              image: venue.image ? `${BACKEND_URL}/${venue.image}` : 'https://images.pexels.com/photos/169193/pexels-photo-169193.jpeg',
+              image: venue.image ? `${venue.image}` : 'https://images.pexels.com/photos/169193/pexels-photo-169193.jpeg',
               capacity: typeof venue.capacity === 'number' ? venue.capacity : 0,
               location: venue.location || 'Location TBD',
               rating: typeof venue.rating === 'number' ? venue.rating : 0,
