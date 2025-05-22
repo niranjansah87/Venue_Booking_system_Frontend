@@ -39,6 +39,10 @@ const EventTypeSelection = ({ event_id, updateBookingData }) => {
     );
   }
 
+
+
+
+//      
   if (error) {
     return (
       <div className="py-8 text-center">

@@ -10,6 +10,9 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { loginUser } = useAuth();
 
+
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -145,6 +148,9 @@ function LoginPage() {
               className="font-medium text-indigo-300 hover:text-indigo-200 transition-all"
             >
               Don't have an account? Sign up
+              
+              
+              
             </Link>
           </div>
         </form>
